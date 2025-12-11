@@ -1,7 +1,8 @@
-const { addAdmin } = require('../controllers/ownerAuthController');
+const { addAdmin, signInOwner } = require('../controllers/ownerAuthController');
 
 const router = require('express').Router();
 
-router.post('/owner/add-owner', addAdmin);
+router.post('/owner/sign-up', addAdmin);
+router.post('/owner/sign-in', signInOwner)
 
 module.exports = router;

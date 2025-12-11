@@ -3,7 +3,7 @@ const bycrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { passwordPatternValidation } = require('../config/joiValidation');
 
-// Owner Registration
+// Owner Registration (Sign Up Owner)
 const addAdmin = async (req, res) => {
     const { name, email, password, phone } = req.body;
 
@@ -40,6 +40,55 @@ const addAdmin = async (req, res) => {
     }
 }
 
+// Sign in Owner
+const signInOwner = async (req, res) => {
+    const {email, password, confirmPassword} = req.body;
+
+    try {
+        if (!email || !password || !confirmPassword) {
+            return res.status(400).json({
+                message: "All fields are required"
+            })
+        }
+
+        const existingOwner = await ownerModel.isOwnerExists(email);
+
+        if (!existingOwner) {
+            return res.status(404).json({
+                message: "Username not found!"
+            })
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                message: "Passwords do not match"
+            });
+        }
+
+        const isPasswordValid = await bycrypt.compare(password, existingOwner.password)
+
+        if (!isPasswordValid) {
+            return res.status(400).json({
+                message: "Invalid password!"
+            })
+        }
+
+        const accessToken = jwt.sign({email: existingOwner.email, name: existingOwner.name}, process.env.ACCESS_SECRET_KEY, {expiresIn: '3d'})
+
+        res.status(200).json({
+            message: 'Login successful', 
+            accessToken: accessToken,
+            owner: {
+                email: existingOwner.email,
+                name: existingOwner.name,
+            } 
+        })
+    } catch (error) {
+        res.status(500).json({ message: 'Error logging in', error })
+    }
+}
+
 module.exports = {
-    addAdmin
+    addAdmin,
+    signInOwner
 }
