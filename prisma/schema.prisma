@@ -4,91 +4,75 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model complaints {
-  complaint_id BigInt            @id @default(autoincrement())
-  tenant_id    BigInt?
-  owner_id     BigInt?
+  complaint_id Int               @id @default(autoincrement())
+  tenant_id    Int?
+  owner_id     Int?
   title        String?           @db.VarChar
   message      String?           @db.VarChar
   created_at   DateTime?         @default(now()) @db.Timestamp(6)
   status       complaint_status?
-  owners       owners?           @relation(fields: [owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  tenants      tenants?          @relation(fields: [tenant_id], references: [tenant_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model notifications {
-  notif_id   BigInt      @id @default(autoincrement())
-  owner_id   BigInt?
-  tenant_id  BigInt?
+  notif_id   Int         @id @default(autoincrement())
+  owner_id   Int?
+  tenant_id  Int?
   title      String?     @db.VarChar
   message    String?     @db.VarChar
   type       notif_type?
   created_at DateTime    @default(now()) @db.Timestamptz(6)
-  owners     owners?     @relation(fields: [owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  tenants    tenants?    @relation(fields: [tenant_id], references: [tenant_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model owners {
-  owner_id      BigInt          @id @default(autoincrement())
-  name          String          @db.VarChar
-  email         String          @unique @db.VarChar
-  password      String          @db.VarChar
-  phone         String?         @db.VarChar
-  complaints    complaints[]
-  notifications notifications[]
-  rooms         rooms[]
-  tenants       tenants[]
+  owner_id Int     @id @default(autoincrement())
+  name     String  @db.VarChar
+  email    String  @unique @db.VarChar
+  password String  @db.VarChar
+  phone    String? @db.VarChar
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model payments {
-  payment_id   BigInt          @id @default(autoincrement())
-  tenant_id    BigInt?
+  payment_id   Int             @id @default(autoincrement())
+  tenant_id    Int?
   amount       Float?          @db.Real
   payment_date DateTime?       @db.Date
   method       String?         @db.VarChar
   status       payment_status?
   proof_url    String?         @db.VarChar
-  tenants      tenants?        @relation(fields: [tenant_id], references: [tenant_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model rooms {
-  room_id     BigInt      @id @default(autoincrement())
-  owner_id    BigInt
+  room_id     Int         @id @default(autoincrement())
+  owner_id    Int
   room_number String      @db.VarChar
   price       Float       @db.Real
   status      room_status
   facilities  String      @db.VarChar
   description String?     @db.VarChar
   image_url   String[]
-  owners      owners      @relation(fields: [owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  tenants     tenants[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model tenants {
-  tenant_id     BigInt          @id @default(autoincrement())
-  owner_id      BigInt
-  room_id       BigInt
-  name          String?         @db.VarChar
-  email         String?         @db.VarChar
-  password      String?         @db.VarChar
-  phone         String?         @db.VarChar
-  rent_start    DateTime?       @db.Date
-  rent_end      DateTime?       @db.Date
-  status        tenant_status
-  complaints    complaints[]
-  notifications notifications[]
-  payments      payments[]
-  owners        owners          @relation(fields: [owner_id], references: [owner_id], onDelete: NoAction, onUpdate: NoAction)
-  rooms         rooms           @relation(fields: [room_id], references: [room_id], onDelete: NoAction, onUpdate: NoAction)
+  tenant_id  Int           @id @default(autoincrement())
+  owner_id   Int
+  room_id    Int
+  name       String?       @db.VarChar
+  email      String?       @db.VarChar
+  password   String?       @db.VarChar
+  phone      String?       @db.VarChar
+  rent_start DateTime?     @db.Date
+  rent_end   DateTime?     @db.Date
+  status     tenant_status
 }
 
 enum complaint_status {
