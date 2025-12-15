@@ -11,20 +11,20 @@ const multerMiddleware = (folderName) => {
             cloudinary: cloudinary,
             params: {
                 folder: `kostify/${folderName}`,
-                allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+                allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif']
             }
         })
 
         // Filter hanya gambar
         const fileFilter = (req, file, cb) => {
-            const allowedTypes = /jpeg|jpg|png|webp/;
+            const allowedTypes = /jpg|jpeg|png|webp|avif/;
             const isMimeType = allowedTypes.test(file.mimetype);
             const isExtName = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         
             if (isMimeType && isExtName) {
                 cb(null, true);
             } else {
-                cb(new Error('Only image files are allowed (jpg, jpeg, png, webp)'));
+                cb(new Error('Only image files are allowed (jpg, jpeg, png, webp, avif)'));
             }
         };
 
