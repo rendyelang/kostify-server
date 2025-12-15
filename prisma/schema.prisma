@@ -36,6 +36,7 @@ model owners {
   email    String  @unique @db.VarChar
   password String  @db.VarChar
   phone    String? @db.VarChar
+  gender   gender?
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -53,12 +54,14 @@ model payments {
 model rooms {
   room_id     Int         @id @default(autoincrement())
   owner_id    Int
-  room_number String      @db.VarChar
+  room_name   String      @db.VarChar
   price       Float       @db.Real
   status      room_status
   facilities  String      @db.VarChar
   description String?     @db.VarChar
   image_url   String[]
+  floor       Int?
+  capacity    Int?
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -98,4 +101,9 @@ enum room_status {
 enum tenant_status {
   active
   inactive
+}
+
+enum gender {
+  male
+  female
 }
