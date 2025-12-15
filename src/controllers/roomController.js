@@ -4,51 +4,58 @@ const jwt = require('jsonwebtoken');
 const { get } = require('../routes/ownerAuthRouter');
 
 // Helper validasi
-function validateRoomInput({ room_number, price, status, facilities, description }) {
-    if (!room_number || !price || !status || !facilities || !description) {
-        return 'room_number, price, status, facilities, and description are required';
+function validateRoomInput({ room_name, price, status, facilities, description, floor, capacity }) {
+    if (!room_name || !price || !status || !facilities || !description || floor === undefined || capacity === undefined) {
+        return 'room_name, price, status, facilities, description, floor, and capacity are required';
     }
     if (isNaN(Number(price)) || Number(price) < 0) {
         return 'price must be a positive number';
+    }
+    if (!Number.isInteger(Number(floor)) || Number(floor) < 0) {
+        return 'floor must be a non-negative integer';
+    }
+    if (!Number.isInteger(Number(capacity)) || Number(capacity) <= 0) {
+        return 'capacity must be a positive integer';
     }
     return null;
 }
 
 // Add room with optional images
 const addRoom = async (req, res) => {
-	const { room_number, price, status, facilities, description } = req.body
+    const { room_name, price, status, facilities, description, floor, capacity } = req.body
 
-	const ownerId = req.user.ownerId
+    const ownerId = req.user.ownerId
 
-	const validationError = validateRoomInput({ room_number, price, status, facilities, description });
-	if (validationError) {
-		return res.status(400).json({ message: validationError });
-	}
+    const validationError = validateRoomInput({ room_name, price, status, facilities, description, floor, capacity });
+    if (validationError) {
+        return res.status(400).json({ message: validationError });
+    }
 
-	if (!req.files || req.files.length === 0) {
+    if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: 'At least one image file is required' });
     }
 
-	// URL array to hold uploaded image URLs
-	const imageUrls = req.files.map(file => file.path || file.secure_url);
+    // URL array to hold uploaded image URLs
+    const imageUrls = req.files.map(file => file.path || file.secure_url);
 
+    const roomPayload = {
+        owner_id: ownerId,
+        room_name,
+        price: Number(price),
+        status,
+        facilities,
+        description,
+        image_url: imageUrls,
+        floor: Number(floor),
+        capacity: Number(capacity)
+    }
 
-	const roomPayload = {
-		owner_id: ownerId,
-		room_number,
-		price,
-		status,
-		facilities,
-		description,
-		image_url: imageUrls
-	}
-
-	try {
-		const newRoom = await roomModel.createRoom(roomPayload)
-		res.status(201).json({ message: 'Room created successfully', room: newRoom })
-	} catch (error) {
-		res.status(500).json({ message: 'Error creating room', error: error.message })
-	}
+    try {
+        const newRoom = await roomModel.createRoom(roomPayload)
+        res.status(201).json({ message: 'Room created successfully', room: newRoom })
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating room', error: error.message })
+    }
 }
 
 // Get all rooms
@@ -114,13 +121,19 @@ const getRoomById = async (req, res) => {
 // Edit room details
 const editRoom = async (req, res) => {
     const roomId = req.params.id
-    const dataToUpdate = req.body
+    const dataToUpdate = { ...req.body }
     const ownerId = req.user.ownerId
-    const replaceImages = req.body.replace_images === 'true' || req.body.replace_images === true
+    const replaceImages = dataToUpdate.replace_images === 'true' || dataToUpdate.replace_images === true
 
     // Validasi data (hanya jika field dikirim)
     if (dataToUpdate.price && (isNaN(Number(dataToUpdate.price)) || Number(dataToUpdate.price) < 0)) {
         return res.status(400).json({ message: 'price must be a positive number' });
+    }
+    if (dataToUpdate.floor !== undefined && (!Number.isInteger(Number(dataToUpdate.floor)) || Number(dataToUpdate.floor) < 0)) {
+        return res.status(400).json({ message: 'floor must be a non-negative integer' });
+    }
+    if (dataToUpdate.capacity !== undefined && (!Number.isInteger(Number(dataToUpdate.capacity)) || Number(dataToUpdate.capacity) <= 0)) {
+        return res.status(400).json({ message: 'capacity must be a positive integer' });
     }
 
     try {
@@ -164,8 +177,10 @@ const editRoom = async (req, res) => {
             }
         }
 
-        // Pastikan price tetap number jika diupdate
+        // Konversi ke tipe data yang benar sebelum update
         if (dataToUpdate.price) dataToUpdate.price = Number(dataToUpdate.price);
+        if (dataToUpdate.floor !== undefined) dataToUpdate.floor = Number(dataToUpdate.floor);
+        if (dataToUpdate.capacity !== undefined) dataToUpdate.capacity = Number(dataToUpdate.capacity);
 
         // Hapus field yang tidak perlu dikirim ke Prisma
         delete dataToUpdate.images;
