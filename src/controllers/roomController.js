@@ -20,7 +20,7 @@ const addRoom = async (req, res) => {
 
 	const ownerId = req.user.ownerId
 
-	const validationError = validateRoomInput({ room_number, price, status, facilities });
+	const validationError = validateRoomInput({ room_number, price, status, facilities, description });
 	if (validationError) {
 		return res.status(400).json({ message: validationError });
 	}
@@ -113,11 +113,12 @@ const getRoomById = async (req, res) => {
 
 // Edit room details
 const editRoom = async (req, res) => {
-	const roomId = req.params.id
-	const dataToUpdate = req.body
-	const ownerId = req.user.ownerId
+    const roomId = req.params.id
+    const dataToUpdate = req.body
+    const ownerId = req.user.ownerId
+    const replaceImages = req.body.replace_images === 'true' || req.body.replace_images === true
 
-	// Validasi data (hanya jika field dikirim)
+    // Validasi data (hanya jika field dikirim)
     if (dataToUpdate.price && (isNaN(Number(dataToUpdate.price)) || Number(dataToUpdate.price) < 0)) {
         return res.status(400).json({ message: 'price must be a positive number' });
     }
@@ -127,47 +128,57 @@ const editRoom = async (req, res) => {
         if (!existingRoom) {
             return res.status(404).json({ message: 'Room not found' })
         }
-		// Check if the room belongs to the logged-in owner
-		if (existingRoom.owner_id !== ownerId) {
-			return res.status(403).json({ message: 'Forbidden: You do not have permission to edit this room' })
-		}
+        // Check if the room belongs to the logged-in owner
+        if (existingRoom.owner_id !== ownerId) {
+            return res.status(403).json({ message: 'Forbidden: You do not have permission to edit this room' })
+        }
 
-        // Multiple images: jika ada file baru, hapus semua gambar lama dari Cloudinary
+        // Handle multiple images
         if (req.files && req.files.length > 0) {
-            if (Array.isArray(existingRoom.image_url)) {
-                for (const imgUrl of existingRoom.image_url) {
-                    if (imgUrl && imgUrl.includes('res.cloudinary.com')) {
-                        const afterUpload = imgUrl.split("upload/")[1]
-                        const imagePath = afterUpload.replace(/\.\w+$/, "")
-                        const finalPath = imagePath; // sesuaikan jika perlu
-                        await cloudinary.uploader.destroy(finalPath, (error, result) => {
-                            if (error) {
+            const newImageUrls = req.files.map(file => file.path || file.secure_url);
+
+            if (replaceImages) {
+                // REPLACE MODE: Hapus semua gambar lama dari Cloudinary, lalu ganti dengan yang baru
+                if (Array.isArray(existingRoom.image_url)) {
+                    for (const imgUrl of existingRoom.image_url) {
+                        if (imgUrl && imgUrl.includes('res.cloudinary.com')) {
+                            try {
+                                const urlParts = imgUrl.split('/upload/')[1];
+                                const pathWithoutVersion = urlParts.replace(/^v\d+\//, '');
+                                const publicId = pathWithoutVersion.replace(/\.\w+$/, '');
+
+                                await cloudinary.uploader.destroy(publicId);
+                                console.log(`Deleted old image: ${publicId}`);
+                            } catch (error) {
                                 console.error('Error deleting old image from Cloudinary:', error)
                             }
-                        });
+                        }
                     }
                 }
+                // Set image_url dengan gambar baru saja
+                dataToUpdate.image_url = newImageUrls;
+            } else {
+                // APPEND MODE: Tambahkan gambar baru ke array yang sudah ada
+                const existingImages = Array.isArray(existingRoom.image_url) ? existingRoom.image_url : [];
+                dataToUpdate.image_url = [...existingImages, ...newImageUrls];
             }
-            // Simpan array URL gambar baru
-            dataToUpdate.image_url = req.files.map(file => file.path || file.secure_url);
         }
 
         // Pastikan price tetap number jika diupdate
         if (dataToUpdate.price) dataToUpdate.price = Number(dataToUpdate.price);
 
-        // Jika ada field images, mapping ke image_url
-        if (dataToUpdate.images) {
-            dataToUpdate.image_url = dataToUpdate.images;
-            delete dataToUpdate.images;
-        }
+        // Hapus field yang tidak perlu dikirim ke Prisma
+        delete dataToUpdate.images;
+        delete dataToUpdate.replace_images;
 
         const updatedRoom = await roomModel.editRoom(roomId, dataToUpdate)
-        res.status(200).json({ 
+        res.status(200).json({
             message: 'Room updated successfully',
-            updated_room: updatedRoom })
+            updated_room: updatedRoom
+        })
     } catch (error) {
-        res.status(500).json({ 
-            message: 'Error updating room', 
+        res.status(500).json({
+            message: 'Error updating room',
             error: error.message
         })
     }
@@ -222,6 +233,28 @@ const deleteRoom = async (req, res) => {
 		// Check if the room belongs to the logged-in owner
 		if (existingRoom.owner_id !== ownerId) {
 			return res.status(403).json({ message: 'Forbidden: You do not have permission to edit this room' })
+		}
+
+		// Hapus semua gambar dari Cloudinary jika ada
+		if (Array.isArray(existingRoom.image_url)) {
+			for (const imgUrl of existingRoom.image_url) {
+				if (imgUrl && imgUrl.includes('res.cloudinary.com')) {
+					try {
+						// Ekstrak public_id dengan benar
+						// Contoh URL: https://res.cloudinary.com/xxx/image/upload/v123456789/kostify/rooms/abc123.jpg
+						const urlParts = imgUrl.split('/upload/')[1]; // v123456789/kostify/rooms/abc123.jpg
+						const pathWithoutVersion = urlParts.replace(/^v\d+\//, ''); // kostify/rooms/abc123.jpg
+						const publicId = pathWithoutVersion.replace(/\.\w+$/, ''); // kostify/rooms/abc123
+
+						// console.log(`Attempting to delete: ${publicId}`);
+						
+						const result = await cloudinary.uploader.destroy(publicId);
+						// console.log(`Delete result for ${publicId}:`, result);
+					} catch (error) {
+						console.error('Error deleting image from Cloudinary:', error)
+					}
+				}
+			}
 		}
 
 		const deletedRoom = await roomModel.deleteRoom(roomId)
