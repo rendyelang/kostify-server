@@ -42,7 +42,7 @@ const multerMiddleware = (folderName) => {
                 return res.status(400).json({ message: err.message });
             }
 
-            console.log("debug req.files dari middleware", req.files)
+            // console.log("debug req.files dari middleware", req.files)
         
             next(); // lanjut ke controller
         });
