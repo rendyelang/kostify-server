@@ -3,16 +3,18 @@ const prisma = new PrismaClient()
 
 // Create new room
 const createRoom = async (room) => {
-    const { owner_id, room_number, price, status, facilities, description, image_url } = room
+    const { owner_id, room_name, price, status, facilities, description, image_url, floor, capacity } = room
     const newRoom = await prisma.rooms.create({
         data: {
             owner_id: owner_id,
-            room_number,
+            room_name,
             price: Number(price),
             status,
             facilities,
             description: description || null,
-            image_url: image_url || []
+            image_url: image_url || [],
+            floor,
+            capacity
         }
     })
 
