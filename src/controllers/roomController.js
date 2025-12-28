@@ -284,6 +284,22 @@ const deleteRoom = async (req, res) => {
 	}
 }
 
+const getAvailableRoomsByOwner = async (req, res) => {
+	const ownerId = req.user.ownerId
+	try {
+		const rooms = await roomModel.getAvailableRoomsByOwner(ownerId)
+		if (!rooms || rooms.length === 0) {
+			return res.status(404).json({ message: 'No available rooms found for this owner' });
+		}
+		res.status(200).json({
+			message: "Available rooms retrieved successfully",
+			data: rooms
+		})
+	} catch (error) {
+		res.status(500).json({ message: 'Error retrieving available rooms for this owner', error: error.message })
+	}
+}
+
 module.exports = {
 	addRoom, 
 	getRooms,
@@ -291,5 +307,6 @@ module.exports = {
 	editRoom,
 	editRoomStatus,
 	deleteRoom,
-	getRoomById
+	getRoomById,
+	getAvailableRoomsByOwner
 }
