@@ -62,20 +62,25 @@ model rooms {
   image_url   String[]
   floor       Int?
   capacity    Int?
+  tenants     tenants[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model tenants {
-  tenant_id  Int           @id @default(autoincrement())
-  owner_id   Int
-  room_id    Int
-  name       String?       @db.VarChar
-  email      String?       @db.VarChar
-  password   String?       @db.VarChar
-  phone      String?       @db.VarChar
-  rent_start DateTime?     @db.Date
-  rent_end   DateTime?     @db.Date
-  status     tenant_status
+  tenant_id        Int           @id @default(autoincrement())
+  owner_id         Int
+  room_id          Int
+  name             String?       @db.VarChar
+  email            String?       @db.VarChar
+  password         String?       @db.VarChar
+  phone            String?       @db.VarChar
+  status           tenant_status
+  emergency_number String?       @db.VarChar
+  birth_place      String?       @db.VarChar
+  birth_date       DateTime?     @db.Date
+  address          String?
+  created_at       DateTime?     @default(now()) @db.Timestamptz(6)
+  rooms            rooms?       @relation(fields: [room_id], references: [room_id])
 }
 
 enum complaint_status {
