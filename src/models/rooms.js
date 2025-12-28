@@ -73,6 +73,16 @@ const deleteRoom = async (roomId) => {
     return deletedRoom
 }
 
+const getAvailableRoomsByOwner = async (ownerId) => {
+    const rooms = await prisma.rooms.findMany({
+        where: {
+            owner_id: Number(ownerId),
+            status: 'empty'
+        }
+    })
+    return rooms
+}
+
 module.exports = {
     createRoom, 
     getRooms,
@@ -80,5 +90,6 @@ module.exports = {
     editRoom,
     editRoomStatus,
     deleteRoom,
-    getRoomById
+    getRoomById,
+    getAvailableRoomsByOwner
 }
