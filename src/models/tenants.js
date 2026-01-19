@@ -2,7 +2,7 @@ const {PrismaClient} = require("@prisma/client")
 const prisma = new PrismaClient()
 
 const createTenant = async (tenantData) => {
-    const { owner_id, room_id, name, email, password, phone, status, emergency_number, birth_place, birth_date, address } = tenantData
+    const { owner_id, room_id, name, email, password, phone, status, emergency_number, birth_place, birth_date, address, entry_date } = tenantData
     const newTenant = await prisma.tenants.create({
         data: {
             owner_id: owner_id,
@@ -15,7 +15,8 @@ const createTenant = async (tenantData) => {
             emergency_number: emergency_number,
             birth_place: birth_place,
             birth_date: birth_date,
-            address: address
+            address: address,
+            entry_date: entry_date
         }
     })
 
