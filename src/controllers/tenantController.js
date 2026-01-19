@@ -30,7 +30,7 @@ const generateRandomPassword = () => {
 const createTenant = async (req, res) => {
   try {
     const { 
-      room_id, name, email, phone_number, 
+      room_id, name, email, phone_number, entry_date,
       address, birth_place, birth_date, emergency_number,  
     } = req.body;
 
@@ -74,6 +74,20 @@ const createTenant = async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(rawPassword, saltRounds);
 
+    // Validasi Entry Date agar tidak Invalid Date
+    let finalEntryDate = new Date(); // Default NOW
+
+    if (entry_date) {
+        // Pakai new Date(entry_date) langsung sebenarnya bisa,
+        // tapi kadang timezonenya geser. Paling aman format YYYY-MM-DD
+        const parsed = new Date(entry_date);
+        if (!isNaN(parsed.getTime())) {
+            finalEntryDate = parsed;
+        }
+    }
+
+    // console.log("Tanggal Masuk yang akan disimpan:", finalEntryDate); // Cek terminal nanti
+
     // C. PERSIAPAN DATA KE DATABASE
     const tenantPayload = {
       owner_id: parseInt(owner_id),
@@ -83,6 +97,7 @@ const createTenant = async (req, res) => {
       password: hashedPassword,
       phone: phone_number,
       status: 'active',
+      entry_date: finalEntryDate,
       emergency_number: emergency_number,
       birth_place: birth_place,
       birth_date: new Date(birth_date),
@@ -277,10 +292,18 @@ const updateTenant = async (req, res) => {
       email,
       phone,
       birth_place,
-      birth_date: new Date(birth_date),
+      // birth_date: new Date(birth_date),
       emergency_number,
       address
     };
+
+    // Validasi Tanggal: Hanya masukkan jika valid date untuk menghindari error "Invalid Date"
+    if (birth_date) {
+      const parsedDate = new Date(birth_date);
+      if (!isNaN(parsedDate.getTime())) {
+        updateData.birth_date = parsedDate;
+      }
+    }
 
     // Jika ada perubahan kamar, gunakan rooms.connect
     if (room_id) {
