@@ -83,6 +83,16 @@ const getAvailableRoomsByOwner = async (ownerId) => {
     return rooms
 }
 
+const getFullRoombyOwner = async (ownerId) => {
+    const rooms = await prisma.rooms.findMany({
+        where: {
+            owner_id: Number(ownerId),
+            status: 'full'
+        }
+    })
+    return rooms
+}
+
 module.exports = {
     createRoom, 
     getRooms,
@@ -91,5 +101,6 @@ module.exports = {
     editRoomStatus,
     deleteRoom,
     getRoomById,
-    getAvailableRoomsByOwner
+    getAvailableRoomsByOwner,
+    getFullRoombyOwner
 }
