@@ -300,6 +300,22 @@ const getAvailableRoomsByOwner = async (req, res) => {
 	}
 }
 
+const getFullRoombyOwner = async (req, res) => {
+	const ownerId = req.user.ownerId
+	try {
+		const rooms = await roomModel.getFullRoombyOwner(ownerId)
+		if (!rooms || rooms.length === 0) {
+			return res.status(404).json({ message: 'No full rooms found for this owner' });
+		}
+		res.status(200).json({
+			message: "Full rooms retrieved successfully",
+			data: rooms
+		})
+	} catch (error) {
+		res.status(500).json({ message: 'Error retrieving full rooms for this owner', error: error.message })
+	}
+}
+
 module.exports = {
 	addRoom, 
 	getRooms,
@@ -308,5 +324,6 @@ module.exports = {
 	editRoomStatus,
 	deleteRoom,
 	getRoomById,
-	getAvailableRoomsByOwner
+	getAvailableRoomsByOwner,
+	getFullRoombyOwner
 }
