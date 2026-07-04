@@ -15,7 +15,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install seluruh dependency (termasuk devDependencies seperti prisma CLI)
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Generate Prisma Client agar sesuai dengan arsitektur OS kontainer (Linux Debian)
 RUN npx prisma generate
